@@ -1,0 +1,81 @@
+'use client'
+
+import { Controller, RegisterOptions } from "react-hook-form"
+import { Autocomplete, TextField } from "@mui/material"
+import { useFormContext } from "../Form"
+
+interface Option {
+    label: string
+    value: string
+}
+
+interface FormAutocompleteProps {
+    name: string
+    label: string
+    options: Option[] | ((data: any) => Option[])
+    placeholder?: string
+    required?: boolean
+    rules?: RegisterOptions
+    compute?: (value: any, setValue: any) => void
+    className?: string
+}
+
+const FormAutocomplete = ({ name, label, options, placeholder, required, rules, compute, className }: FormAutocompleteProps) => {
+    const { control, setValue: setFormValue ,watch } = useFormContext()
+
+    return (
+        <div className={`w-full ${className || ''}`}>
+            <Controller
+                control={control}
+                name={name}
+                rules={{
+                    required: required ? `${label} is required` : false,
+                    ...rules
+                }}
+                render={({ field: { onChange, value, ref, ...fieldProps }, fieldState: { error,  }, formState: {  } }) => {
+
+                        // danger to use
+                        const data = watch()
+
+                        if(typeof options === 'function'){
+                            options = options(data)
+                        }
+
+                    return (
+                    <Autocomplete
+                        {...fieldProps}
+                        options={options}
+                        getOptionLabel={(option) => option.label || ''}
+                        value={options.find(opt => opt.value === value) || null}
+                        onChange={(_, newValue) => {
+                            const val = newValue ? newValue.value : ''
+                            onChange(val)
+                            if (compute) {
+                                compute(val, setFormValue)
+                            }
+                        }}
+                        renderInput={(params) => (
+                            <TextField
+                                {...params}
+                                label={label}
+                                placeholder={placeholder}
+                                error={!!error}
+                                helperText={error?.message as string}
+                                inputRef={ref}
+                                required={required}
+                                slotProps={{
+                                    inputLabel: {
+                                        shrink: true,
+                                    }
+                                }}
+                            />
+                        )}
+                        isOptionEqualToValue={(option, value) => option.value === value.value}
+                    />
+                )}}
+            />
+        </div>
+    )
+}
+
+export default FormAutocomplete
